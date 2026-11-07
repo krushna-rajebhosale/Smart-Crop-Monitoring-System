@@ -1,7 +1,5 @@
 Flask>=3.0,<4.0
+gunicorn>=22.0
 Pillow>=10.0
-numpy>=1.26
-# Your model file was saved with Keras 3.13.2, so use a matching or newer Keras/TensorFlow.
-# Ideally use the SAME versions as your training notebook (see README, "Matching versions").
-tensorflow>=2.20
-keras>=3.13.2
+numpy>=1.26,<2.0
+tensorflow>=2.15,<2.20
