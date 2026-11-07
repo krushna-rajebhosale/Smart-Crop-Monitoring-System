@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block hero %}
+<header class="hero">
+  <div class="container">
+    {% include "_nav.html" %}
+    <h1>Smart Crop Monitoring System</h1>
+    <p class="subtitle">Upload a photo of a plant leaf to identify the disease and get care guidance. Built with a MobileNetV2 deep-learning model.</p>
+  </div>
+</header>
+{% endblock %}
+
+{% block layout_class %}pull-up{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='camera.css') }}">
+
+{% if not model_ready %}
+<section class="notice caution" role="status">
+  <strong><i class="fa-solid fa-screwdriver-wrench"></i> Setup needed</strong>
+  <p>The website is running, but the AI model is not ready: {{ model_error }}</p>
+</section>
+{% endif %}
+
+{% if error %}
+<section class="notice error-notice" role="alert">
+  <strong><i class="fa-solid fa-triangle-exclamation"></i> We couldn't analyse that image</strong>
+  <p>{{ error }}</p>
+</section>
+{% endif %}
+
+<section class="workspace">
+  <div class="panel upload-panel">
+    <div class="section-heading">
+      <span class="step">1</span>
+      <div>
+        <h2>Check a leaf</h2>
+        <p>Take a photo with your camera, or upload one from your device.</p>
+      </div>
+    </div>
+
+    <div class="mode-switch" role="tablist" aria-label="Photo source">
+      <button type="button" class="mode-tab is-active" id="tabCamera" role="tab" aria-selected="true">
+        <i class="fa-solid fa-camera"></i><span>Take photo</span>
+      </button>
+      <button type="button" class="mode-tab" id="tabUpload" role="tab" aria-selected="false">
+        <i class="fa-solid fa-cloud-arrow-up"></i><span>Upload photo</span>
+      </button>
+    </div>
+    <p class="camera-error" id="cameraError" role="alert" hidden></p>
+
+    <form method="post" enctype="multipart/form-data" id="uploadForm" data-has-error="{{ '1' if error else '0' }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- TAKE A PHOTO (opens by itself) -->
+      <div id="cameraMode">
+        <div class="cam-wrap" id="camWrap">
+          <div class="cam-stage" id="camStage">
+            <video id="cameraVideo" playsinline muted autoplay></video>
+            <div class="live-frame" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="live-hud" id="liveHud" data-state="idle">
+              <span class="live-dot"></span>
+              <span id="liveStatus">Starting camera&hellip;</span>
+            </div>
+          </div>
+
+          <div class="cam-side">
+            <div class="live-result" id="liveResult" data-state="healthy" aria-live="polite" hidden>
+              <div class="live-result-head">
+                <div>
+                  <strong id="liveName">&ndash;</strong>
+                  <small id="liveCrop"></small>
+                </div>
+                <span class="live-percent" id="livePercent">0%</span>
+              </div>
+              <progress class="bar" id="liveBar" max="100" value="0" aria-label="Live confidence"></progress>
+              <p class="live-hint">Live preview only. Press the round button to take the photo and get the full report.</p>
+            </div>
+
+            <div class="cam-controls">
+              <div class="side left">
+                <button type="button" class="link-button" id="flipBtn" hidden>
+                  <i class="fa-solid fa-camera-rotate"></i> Flip
+                </button>
+              </div>
+              <div class="shutter-wrap">
+                <button type="button" class="shutter" id="shutterBtn" aria-label="Take photo and analyse" disabled></button>
+                <span class="shutter-label">Take photo</span>
+              </div>
+              <div class="side right">
+                <button type="button" class="link-button" id="pauseBtn">
+                  <i class="fa-solid fa-pause"></i> <span>Pause</span>
+                </button>
+              </div>
+            </div>
+            <p class="cam-note">Hold the leaf close, flat and in good light inside the corner marks.</p>
+          </div>
+        </div>
+
+        <div class="cam-unsupported" id="camUnsupported" hidden>
+          <i class="fa-solid fa-camera"></i>
+          <p>The live camera needs a secure connection on this device. You can still take a photo with your phone camera.</p>
+          <button type="button" class="primary-button inline" id="phoneCameraBtn">
+            <i class="fa-solid fa-camera"></i><span>Open phone camera</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- UPLOAD A PHOTO -->
+      <div id="uploadMode" hidden>
+        <label class="dropzone" for="leaf_image" id="dropzoneBox">
+          <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+          <strong id="uploadText">Choose a leaf image or drag it here</strong>
+          <span id="uploadHint">JPG, JPEG or PNG, up to 8 MB</span>
+          <input type="file" id="leaf_image" name="leaf_image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required>
+        </label>
+      </div>
+
+      <input type="file" id="cameraFallback" accept="image/*" capture="environment" hidden>
+
+      {% if show_override %}
+      <label class="override">
+        <input type="checkbox" name="force_leaf" value="1">
+        <span>My photo really is a plant leaf &mdash; analyse it anyway</span>
+      </label>
+      {% endif %}
+
+      <button class="primary-button" type="submit" id="submitBtn" hidden>
+        <i class="fa-solid fa-microscope"></i>
+        <span>Analyse leaf</span>
+      </button>
+    </form>
+
+    <p class="small-note"><i class="fa-regular fa-lightbulb"></i> Lay the leaf flat, keep it in focus and centred, and shoot in natural light.</p>
+  </div>
+
+  <div class="panel preview-panel" id="previewPanel" hidden>
+    <div class="section-heading">
+      <span class="step">2</span>
+      <div>
+        <h2>Your photo</h2>
+        <p>Check that the leaf is clear before analysing.</p>
+      </div>
+    </div>
+    <div class="image-preview-wrapper">
+      <img class="leaf-preview" id="previewImage" alt="Preview of the selected leaf">
+    </div>
+  </div>
+</section>
+
+{% if crops %}
+<section class="panel supported">
+  <h2>Supported crops</h2>
+  <p>The model was trained on {{ class_count }} classes covering these crops. Photos of other plants may give unreliable results.</p>
+  <ul class="chips">
+    {% for crop in crops %}<li>{{ crop }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="how-it-works">
+  <h2>How it works</h2>
+  <ol class="flow">
+    <li><span class="num">1</span><strong>Upload</strong><small>Leaf photo</small></li>
+    <li><span class="num">2</span><strong>Validate</strong><small>Safety checks</small></li>
+    <li><span class="num">3</span><strong>Classify</strong><small>MobileNetV2</small></li>
+    <li><span class="num">4</span><strong>Advise</strong><small>SQLite database</small></li>
+  </ol>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} &ndash; Smart Crop Monitoring{% endblock %}
+{% block content %}
+<section class="panel error-page">
+  <i class="fa-solid fa-circle-exclamation error-icon"></i>
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <a class="primary-button inline" href="{{ url_for('index') }}"><i class="fa-solid fa-house"></i><span>Back to home</span></a>
+</section>
+{% endblock %}

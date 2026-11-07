@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Dashboard &ndash; Smart Crop Monitoring{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  <h1>Dashboard</h1>
+  <p>A summary of the photos analysed on this device, and the state of the system.</p>
+</div>
+
+<section class="stat-grid" aria-label="Summary">
+  <article class="stat-card">
+    <span class="stat-label">Photos analysed</span>
+    <strong class="stat-value">{{ stats.total }}</strong>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Healthy results</span>
+    <strong class="stat-value">{{ stats.healthy }}</strong>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Disease results</span>
+    <strong class="stat-value">{{ stats.diseased }}</strong>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Average confidence</span>
+    <strong class="stat-value">{% if stats.avg_confidence is not none %}{{ stats.avg_confidence }}%{% else %}&ndash;{% endif %}</strong>
+    <small>{{ stats.low_confidence }} low-confidence result{{ '' if stats.low_confidence == 1 else 's' }}</small>
+  </article>
+</section>
+
+<div class="two-col">
+  <section class="panel">
+    <h2 class="panel-title">Most frequent results</h2>
+    {% if stats.top %}
+    <ul class="top-list">
+      {% for row in stats.top %}
+      <li>
+        <span class="top-name">{{ row.prediction|condition }} <small>{{ row.prediction|crop }}</small></span>
+        <progress class="bar bar-thin" max="{{ max_count }}" value="{{ row.n }}" aria-label="{{ row.n }} scans"></progress>
+        <span class="top-value">{{ row.n }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">No photos yet. <a href="{{ url_for('index') }}">Analyse your first leaf.</a></p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Recent scans</h2>
+    {% if stats.recent %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>Result</th><th>Confidence</th><th><span class="sr-only">Open</span></th></tr></thead>
+        <tbody>
+        {% for s in stats.recent %}
+          <tr>
+            <td>{{ s.created_at|short_time }}</td>
+            <td>{{ s.prediction|condition }} <small>{{ s.prediction|crop }}</small></td>
+            <td>{{ s.confidence }}%{% if s.low_confidence %} <span class="badge badge-neutral">low</span>{% endif %}</td>
+            <td><a href="{{ url_for('result', scan_id=s.id) }}">View</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty">Scans will appear here.</p>
+    {% endif %}
+  </section>
+</div>
+
+<div class="two-col">
+  <section class="panel">
+    <h2 class="panel-title">Recommendation database</h2>
+    <dl class="facts">
+      <div><dt>Classes in the model</dt><dd>{{ class_count }}</dd></div>
+      <div><dt>Classes with stored guidance</dt><dd>{{ stats.classes_with_details }} of {{ stats.classes_total }}</dd></div>
+      <div><dt>Entries with a checked source</dt><dd>{{ stats.classes_verified }} of {{ stats.classes_total }}</dd></div>
+    </dl>
+    <progress class="bar" max="{{ stats.classes_total or 1 }}" value="{{ stats.classes_with_details }}" aria-label="Classes with stored guidance"></progress>
+    <p class="fine-print">Classes without guidance show safe general advice only. Add checked entries in <code>data/recommendations.csv</code>.</p>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Model</h2>
+    <dl class="facts">
+      <div><dt>Architecture</dt><dd>MobileNetV2</dd></div>
+      <div><dt>Input size</dt><dd>{{ input_size[0] }} &times; {{ input_size[1] }} px</dd></div>
+      <div><dt>Status</dt><dd>{% if model_ready %}Ready{% else %}Not loaded{% endif %}</dd></div>
+      <div><dt>Is-it-a-leaf check</dt><dd>{{ leaf_check }}</dd></div>
+    </dl>
+    {% if evaluation %}
+    {% if gate_info %}
+    <p class="fine-print">Leaf gate, measured on {{ gate_info.test_images.leaf + gate_info.test_images.not_leaf }} test photos ({{ gate_info.date }}): {{ (gate_info.not_leaf_caught * 100)|round(1) }}% of non-leaf photos stopped, {{ (gate_info.leaf_wrongly_rejected * 100)|round(1) }}% of real leaves wrongly stopped.</p>
+    {% endif %}
+    <div class="eval-box">
+      <strong>{{ (evaluation.overall_accuracy * 100)|round(2) }}%</strong>
+      <span>measured accuracy on {{ evaluation.images_tested }} test images{% if evaluation.date %} ({{ evaluation.date }}){% endif %}</span>
+    </div>
+    <p class="fine-print">From <code>reports/evaluation.json</code>, created by <code>evaluate_model.py</code> on a test folder you supplied.</p>
+    {% else %}
+    <p class="fine-print">No accuracy is shown because none has been measured yet. Run <code>python evaluate_model.py "path\to\test_folder"</code> on photos the model never saw during training.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+/* camera.css - styles for the "Take photo / Upload photo" panel.
+   Works together with style.css (uses its colours when available). */
+
+/* ---------- Tabs ---------- */
+.mode-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  padding: 5px; margin-bottom: 18px;
+  background: var(--mint-100, #e3efe7); border-radius: 14px;
+}
+.mode-tab {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 12px;
+  font: inherit; font-weight: 600; font-size: 0.95rem;
+  color: var(--forest-700, #1f5c3b); background: transparent;
+  border: 0; border-radius: 10px; cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.mode-tab:hover { background: rgba(255, 255, 255, 0.6); }
+.mode-tab.is-active { background: var(--surface, #fff); box-shadow: 0 1px 4px rgba(15, 40, 25, 0.18); }
+.mode-tab:focus-visible { outline: 3px solid rgba(39, 112, 76, 0.45); outline-offset: 2px; }
+
+/* ---------- Camera area (kept to a sensible size) ---------- */
+.cam-wrap { max-width: 640px; margin: 0 auto; }
+.cam-side { display: block; }
+
+.cam-stage {
+  position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 70vh;
+  overflow: hidden; background: #0f1a14; border-radius: 16px;
+}
+.cam-stage video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; background: #0f1a14;
+}
+
+/* the four corner marks that show where to place the leaf */
+.live-frame { position: absolute; inset: 12%; pointer-events: none; }
+.live-frame span { position: absolute; width: 26px; height: 26px; border: 3px solid rgba(255, 255, 255, 0.9); }
+.live-frame span:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
+.live-frame span:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
+.live-frame span:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
+.live-frame span:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
+
+/* status pill on top of the video */
+.live-hud {
+  position: absolute; left: 12px; right: 12px; top: 12px;
+  display: flex; align-items: center; gap: 10px; width: fit-content; max-width: calc(100% - 24px);
+  padding: 7px 14px; font-size: 0.9rem; font-weight: 600; color: #fff;
+  background: rgba(15, 26, 20, 0.72); border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+.live-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #9aa8a0; }
+.live-hud[data-state="scanning"] .live-dot { background: #7fd3a1; animation: livepulse 1.2s ease-in-out infinite; }
+.live-hud[data-state="healthy"] .live-dot { background: #4ade80; }
+.live-hud[data-state="disease"] .live-dot { background: #f87171; }
+.live-hud[data-state="uncertain"] .live-dot,
+.live-hud[data-state="notleaf"] .live-dot { background: #fbbf24; }
+.live-hud[data-state="error"] .live-dot { background: #f87171; }
+@keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* small result card under the video */
+.live-result {
+  margin-top: 14px; padding: 14px 16px;
+  background: var(--mint-50, #f1f7f3); border: 1px solid var(--line, #dbe7df);
+  border-left: 5px solid var(--forest-600, #27704c); border-radius: 12px;
+}
+.live-result[data-state="disease"] { border-left-color: #d9534f; }
+.live-result[data-state="uncertain"] { border-left-color: #e0a526; }
+.live-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.live-result-head strong { display: block; font-size: 1.15rem; line-height: 1.25; overflow-wrap: anywhere; }
+.live-result-head small { color: var(--ink-soft, #55655b); }
+.live-percent { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.live-result progress.bar { margin-top: 10px; }
+.live-hint { margin: 8px 0 0; font-size: 0.85rem; color: var(--ink-soft, #55655b); }
+
+/* controls: flip - big shutter - pause */
+.cam-controls {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: 12px; margin-top: 18px;
+}
+.cam-controls .side { display: flex; }
+.cam-controls .side.left { justify-content: flex-start; }
+.cam-controls .side.right { justify-content: flex-end; }
+.shutter-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.shutter {
+  width: 76px; height: 76px; padding: 0; cursor: pointer;
+  background: #fff; border: 4px solid var(--forest-700, #1f5c3b); border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(15, 40, 25, 0.25);
+  display: grid; place-items: center; transition: transform 0.12s ease;
+}
+.shutter::after {
+  content: ""; width: 54px; height: 54px; border-radius: 50%;
+  background: var(--forest-600, #27704c); transition: background 0.15s ease;
+}
+.shutter:hover::after { background: var(--forest-700, #1f5c3b); }
+.shutter:active { transform: scale(0.94); }
+.shutter:disabled { opacity: 0.45; cursor: not-allowed; }
+.shutter:focus-visible { outline: 3px solid rgba(39, 112, 76, 0.45); outline-offset: 3px; }
+.shutter-label { font-size: 0.9rem; font-weight: 600; color: var(--forest-700, #1f5c3b); }
+
+.cam-controls .link-button { white-space: nowrap; }
+.cam-note { margin: 16px 0 0; text-align: center; font-size: 0.88rem; color: var(--ink-soft, #55655b); }
+
+/* shown when the live camera is not possible (for example a phone using http) */
+.cam-unsupported {
+  display: grid; justify-items: center; gap: 12px; text-align: center;
+  padding: 32px 20px; background: var(--mint-50, #f1f7f3);
+  border: 1.5px dashed var(--line-strong, #b9cfc1); border-radius: 16px;
+}
+.cam-unsupported i { font-size: 2rem; color: var(--forest-600, #27704c); }
+.cam-unsupported p { margin: 0; color: var(--ink-soft, #55655b); }
+
+/* messages */
+.camera-error {
+  margin: 0 0 14px; padding: 10px 14px; font-size: 0.93rem;
+  color: var(--red-ink, #8a1f1f); background: var(--red-bg, #fdecec);
+  border: 1px solid var(--red-line, #f2b8b5); border-radius: 10px;
+}
+.override { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; font-size: 0.95rem; cursor: pointer; }
+.override input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--forest-700, #1f5c3b); flex: none; }
+
+/* ---------- Wide screens: camera on the left, result and button on the right ---------- */
+@media (min-width: 860px) {
+  .cam-wrap { display: flex; align-items: stretch; gap: 28px; max-width: none; }
+  .cam-stage { flex: 1 1 58%; max-height: none; }
+  .cam-side { flex: 1 1 38%; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .cam-side .live-result { margin-top: 0; }
+  .cam-controls { margin-top: 22px; }
+}
+
+/* ---------- Compact heading on the home page so the camera is visible without scrolling ---------- */
+.hero { padding-bottom: 96px; }
+.hero h1 { max-width: none; font-size: clamp(1.9rem, 4.2vw, 2.7rem); }
+.hero .subtitle { margin-top: 8px; max-width: 60ch; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 600px) {
+  .cam-stage { aspect-ratio: 1 / 1; }
+  .mode-tab span { font-size: 0.9rem; }
+  .shutter { width: 68px; height: 68px; }
+  .shutter::after { width: 48px; height: 48px; }
+  .cam-controls .link-button { padding: 8px 10px; font-size: 0.85rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-hud[data-state="scanning"] .live-dot { animation: none; }
+}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ scan.prediction|condition }} &ndash; Smart Crop Monitoring{% endblock %}
+
+{% block content %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <section class="notice caution" role="status">
+    <strong><i class="fa-solid fa-camera"></i> Photo tip</strong>
+    <p>{{ message }}</p>
+  </section>
+  {% endfor %}
+{% endwith %}
+
+<div class="page-actions no-print">
+  <a class="link-button" href="{{ url_for('index') }}"><i class="fa-solid fa-arrow-left"></i> Analyse another leaf</a>
+  <button type="button" class="link-button" data-print><i class="fa-solid fa-print"></i> Print report</button>
+</div>
+
+<section class="panel results-panel">
+  <div class="section-heading">
+    <span class="step">3</span>
+    <div>
+      <h2>Diagnosis</h2>
+      <p>Scan #{{ scan.id }} &middot; {{ scan.created_at|short_time }}</p>
+    </div>
+  </div>
+
+  <div class="result-layout">
+    {% if image_url %}
+    <div class="image-preview-wrapper result-image">
+      <img class="leaf-preview" src="{{ image_url }}" alt="Analysed plant leaf">
+    </div>
+    {% endif %}
+
+    <div class="prediction-card {% if healthy %}is-healthy{% endif %} {% if scan.low_confidence %}is-uncertain{% endif %}">
+      <div>
+        <span class="badge {% if healthy %}badge-ok{% else %}badge-alert{% endif %}">
+          {% if healthy %}No disease class detected{% else %}Disease class detected{% endif %}
+        </span>
+        <h3>{{ scan.prediction|condition }}</h3>
+        <p><i class="fa-solid fa-leaf"></i> Crop: <strong>{{ rec.crop }}</strong></p>
+      </div>
+      <div class="confidence">
+        <strong>{{ scan.confidence }}%</strong>
+        <span>Model confidence</span>
+        <progress class="bar" max="100" value="{{ scan.confidence }}" aria-label="Model confidence">{{ scan.confidence }}%</progress>
+      </div>
+    </div>
+  </div>
+
+  {% if scan.low_confidence %}
+  <div class="notice caution">
+    <strong><i class="fa-solid fa-circle-question"></i> The model is not very sure</strong>
+    <p>Confidence is below {{ threshold|round|int }}%. The photo may be unclear, or the plant may not be one of the supported crops. Try another photo, and treat this result with extra care.</p>
+  </div>
+  {% endif %}
+
+  <p class="fine-print">Confidence is the model's own score for its top choice. It is not a measured accuracy and a high score can still be wrong.</p>
+
+  <h3 class="sub-heading">Other possibilities</h3>
+  <ul class="top-list">
+    {% for item in scan.top %}
+    <li>
+      <span class="top-name">{{ item.label|condition }} <small>{{ item.label|crop }}</small></span>
+      <progress class="bar bar-thin" max="100" value="{{ item.confidence }}" aria-label="{{ item.label|condition }} confidence"></progress>
+      <span class="top-value">{{ item.confidence }}%</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div class="source-line">
+    {% if rec.verified %}
+      <span class="badge badge-ok"><i class="fa-solid fa-circle-check"></i> Source checked</span>
+      <span>{{ rec.source }}</span>
+    {% elif rec.has_details %}
+      <span class="badge badge-neutral"><i class="fa-solid fa-circle-info"></i> General guidance</span>
+      <span>Not yet checked against a cited source.</span>
+    {% else %}
+      <span class="badge badge-neutral"><i class="fa-solid fa-circle-info"></i> No stored guidance yet</span>
+      <span>Showing safe general advice only.</span>
+    {% endif %}
+  </div>
+
+  <div class="info-grid">
+    <article class="info-card">
+      <header><span class="info-icon"><i class="fa-solid fa-magnifying-glass"></i></span><h3>Symptoms</h3></header>
+      <p>{{ rec.symptoms }}</p>
+    </article>
+    <article class="info-card">
+      <header><span class="info-icon"><i class="fa-solid fa-notes-medical"></i></span><h3>Treatment</h3></header>
+      <p>{{ rec.treatment }}</p>
+    </article>
+    <article class="info-card">
+      <header><span class="info-icon"><i class="fa-solid fa-shield-halved"></i></span><h3>Prevention</h3></header>
+      <p>{{ rec.prevention }}</p>
+    </article>
+    <article class="info-card">
+      <header><span class="info-icon"><i class="fa-solid fa-seedling"></i></span><h3>Nutrients and fertilizer</h3></header>
+      <p>{{ rec.nutrients }}</p>
+    </article>
+  </div>
+
+  <div class="notice caution">
+    <strong><i class="fa-solid fa-circle-exclamation"></i> Confirm before treating</strong>
+    <p>This result comes from an automated model and can be wrong. Check it with a local agronomist or crop specialist before applying chemical treatments.</p>
+  </div>
+</section>
+{% endblock %}

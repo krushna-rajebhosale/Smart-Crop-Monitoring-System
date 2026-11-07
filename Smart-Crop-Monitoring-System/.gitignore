@@ -1,0 +1,32 @@
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Git and editor
+# .git is managed by Git itself
+.vscode/
+
+# Temporary files
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+Thumbs.db
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Uploaded images
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log

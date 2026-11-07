@@ -1,0 +1,15 @@
+<nav class="topbar" aria-label="Main">
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="brand-mark"><i class="fa-solid fa-leaf"></i></span>
+    <span>Smart Crop Monitoring</span>
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Analyse</a>
+    <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+    {% if model_ready %}
+      <span class="status status-ok">Model ready</span>
+    {% else %}
+      <span class="status status-warn" title="{{ model_error }}">Model not loaded</span>
+    {% endif %}
+  </div>
+</nav>
